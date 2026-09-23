@@ -1,7 +1,7 @@
 ---
 name: sub-explore-codebase
 description: Explore a codebase, in any language or framework, and return a structured summary of relevant files, projects, and patterns for a given task
-model: Claude Haiku 4.5 (copilot)
+model: Coder-fast-2 (litellm)
 tools:
   - graphify/*
   - search/fileSearch

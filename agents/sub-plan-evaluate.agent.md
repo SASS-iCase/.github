@@ -1,7 +1,7 @@
 ---
 name: sub-plan-evaluate
 description: Evaluate a drafted implementation plan using rubric scoring and return a structured critique for the calling agent
-model: Claude Haiku 4.5 (copilot)
+model: Coder-thinking-1 (litellm)
 tools:
   - read/readFile
   - search/fileSearch
