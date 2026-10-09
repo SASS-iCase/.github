@@ -79,9 +79,23 @@ The Jira instance URL and credentials are taken automatically from the `X-Jira-*
 
 If the response contains `"error"`, call `drax-coder/RecordPrompt` (`status="FAILED"`) **now, before returning**, then stop and return: `ERROR: {error value from response}.`
 
+#### 🛑 Step 1a — Fetch MUST have actually returned real ticket data (HARD STOP — non-negotiable, MUST)
+
+**A skipped, cancelled, empty, or non-ticket `GetJiraIssue` response is a hard STOP, never a reason to continue with no data — and it is NOT the same as the `"error"` case above (a real observed failure class: when the call is skipped and no guard catches it, the downstream planner confabulates an entire ticket from the model's priors).** Before extracting anything in Step 2, inspect the actual `GetJiraIssue` response and STOP if ANY of the following is true — these do not surface as an `"error"` field, so Step 1's error check above does NOT catch them:
+
+- The response text indicates the call was **skipped or cancelled** — e.g. it contains `"skip"`, `"chose to skip"`, `"proceed without running"`, `"cancelled"`, `"did not run"`, or any wording meaning the tool never actually executed.
+- The response is **empty, null, whitespace, or absent** entirely.
+- The response does **not contain the real fetched ticket fields** — i.e. no recognizable Jira issue payload (no `summary`/`fields`/`key`, or an object with none of the ticket content populated).
+
+In any of these cases, you have **no ticket data** — treat it exactly like a fetch failure:
+1. Call `drax-coder/RecordPrompt` (`status="FAILED"`) **now, before returning** — its `response` field records the actual skip/empty response received (so the record reflects what really happened, not an invented ticket).
+2. Stop and return **only** this line, with nothing else appended: `ERROR: GetJiraIssue did not return ticket data for {TICKET-KEY} (fetch was skipped, cancelled, or returned no issue payload). Cannot proceed — a real Jira fetch is required.`
+
+**Never fabricate, infer, guess, or "fill in" ticket fields from the ticket key, the project name, the codebase, prior conversation, or your own training knowledge when the fetch did not return real data (MUST).** Returning any `TICKET:`/`SUMMARY:`/`DESCRIPTION:` content that did not come verbatim from a genuine `GetJiraIssue` payload is this guard being violated — it is the exact mechanism that produces a confabulated plan. If the data is not real, the only valid output is the `ERROR:` line above.
+
 ### Step 2: Extract the Data
 
-Parse the JSON response from `GetJiraIssue` into the fields below. Do **not** produce any return text yet — that is Step 4, not this step. Producing the `TICKET:`/`SUMMARY:`/... text now, before Step 3, is the single most common way this agent fails: the structured text below reads like a final answer, so once it's written the turn feels finished and the still-pending `RecordPrompt` call in Step 3 gets silently dropped. Hold the extracted fields in working memory and go straight to Step 3 — do not write them out as your response yet.
+**Only reach this step once Step 1a has confirmed the response is a real ticket payload — if Step 1a stopped, you never arrive here.** Parse the JSON response from `GetJiraIssue` into the fields below. Do **not** produce any return text yet — that is Step 4, not this step. Producing the `TICKET:`/`SUMMARY:`/... text now, before Step 3, is the single most common way this agent fails: the structured text below reads like a final answer, so once it's written the turn feels finished and the still-pending `RecordPrompt` call in Step 3 gets silently dropped. Hold the extracted fields in working memory and go straight to Step 3 — do not write them out as your response yet.
 
 ### Step 3: Record the Prompt FIRST (CRITICAL — this step's tool call must happen before Step 4's text, not after)
 
