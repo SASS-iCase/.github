@@ -69,8 +69,6 @@ If no `EVALUATION` is provided, this is a **first draft** — start from scratch
 
 ### Step 2: Parse the Ticket
 
-**🛑 Step 2 pre-check — REAL ticket data MUST be present before drafting anything; no real ticket = no plan (HARD STOP, MUST, CRITICAL).** Before extracting a single requirement, confirm `TICKET-SUMMARY`/the ticket data on disk actually contains a real fetched Jira ticket — genuine acceptance criteria and a description that came from `GetJiraIssue`, not a placeholder, an `ERROR:` line, a skip/empty notice, or just a bare ticket key. If the ticket data is missing, empty, an `ERROR:`/skip message, or otherwise not a real ticket payload, **STOP immediately** and return `ERROR: No real ticket data for {TICKET-KEY}; cannot draft a plan. A genuine GetJiraIssue fetch is required.` — do not write any plan file. **NEVER invent, infer, assume, or reconstruct the ticket's scope, acceptance criteria, or feature from the ticket key, the project/workspace name, the codebase contents, Graphify output, prior conversation, or your own training knowledge of "what a project like this usually needs" (MUST — fabricating a plausible-looking feature when the real ticket was never fetched produces a plan that matches neither the ticket nor the actual codebase).** The plan's scope is defined solely by a real fetched ticket; absent one, the only valid action is to STOP, never to pattern-complete a plausible-looking feature.
-
 From `TICKET-SUMMARY` (and the ticket data on disk if more detail is needed), extract:
 - Every acceptance criterion as a discrete, testable requirement
 - Out-of-scope items (do not plan these)
