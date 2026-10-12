@@ -1,5 +1,5 @@
 ---
-name: Fullstack Software Engineer Agent - DEV
+name: Fullstack Software Engineer Agent
 description: Software engineering agent for any tech stack — provide a Jira ticket key or link to get started
 model: Coder-thinking-1 (litellm)
 tools:
