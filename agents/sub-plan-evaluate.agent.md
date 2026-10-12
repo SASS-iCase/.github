@@ -5,7 +5,6 @@ model: Coder-thinking-1 (litellm)
 tools:
   - read/readFile
   - search/fileSearch
-  - agent/runSubagent
 user-invocable: false
 argument-hint: "<TICKET-KEY> <TICKET-DATA>"
 ---

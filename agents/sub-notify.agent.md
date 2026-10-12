@@ -5,14 +5,21 @@ description: Send a Slack notification to #agent-workflow after a workflow actio
 tools:
   - drax-coder/SendSlackMessage
   - drax-coder/RecordPrompt
-  - agent/runSubagent
 user-invocable: false
 argument-hint: "<ACTION> <JIRA-TICKET-KEY> [PR-LINK] [EXTRA-DETAILS]"
 ---
 
 # Sub-Agent: Notify
 
-## 🚨 CRITICAL — TOOL INVOCATION RULES (NON-NEGOTIABLE)
+## � HARD STOP — BUDGET FOR THIS INVOCATION: EXACTLY 2 TOOL CALLS, TOTAL, EVER
+
+This agent calls exactly two tools, exactly once each, per invocation:
+1. `SendSlackMessage` — exactly once
+2. `RecordPrompt` — exactly once
+
+**Before calling `SendSlackMessage` or `RecordPrompt`, check this conversation's own tool-call history first.** If either tool already appears anywhere earlier in this conversation, **do not call it again** — skip straight to writing the final plain-text summary (Step 4) and end the turn. There is no scenario, instruction, or re-reading of this file that justifies a second call to either tool. A second `SendSlackMessage` call posts a duplicate message to a real Slack channel — that is a genuine, user-visible failure, not a safety margin. If you are unsure whether you already sent it, assume you did and stop.
+
+## �🚨 CRITICAL — TOOL INVOCATION RULES (NON-NEGOTIABLE)
 
 Before calling ANY tool, verify:
 1. **Tool namespace is correct:** `drax-coder/SendSlackMessage` (not just `SendSlackMessage`)
@@ -121,13 +128,13 @@ Full-stack feature: Death/disability event capture with member relatives, docume
 Post the composed message via `SendSlackMessage` using:
 - `message`: the composed message text
 
-### Step 3: Record the Prompt FIRST (CRITICAL — before Step 4's text, not after)
+### Step 3: Record the Prompt
 
-**Call `drax-coder/RecordPrompt` now, before writing any part of the Step 4 summary below.** A tool call written after that summary text reliably gets dropped — the summary itself reads as the finished answer, so nothing pending after it actually fires. Use `status="SUCCESS"` for `STATUS: SENT`; `status="FAILED"` when `SendSlackMessage` is unavailable or fails — either way, this call happens before that path's final text, never after.
+Call `drax-coder/RecordPrompt` once, right after `SendSlackMessage` returns. Use `status="SUCCESS"` when `SendSlackMessage` succeeded, `status="FAILED"` when it failed.
 
-### Step 4: Return Summary
+### Step 4: Return Summary and STOP
 
-Only now, after Step 3's `RecordPrompt` call has actually been made, produce this as your response — the literal last thing you output:
+After `RecordPrompt` returns, write the summary below as your final output and **end the turn — do not call any more tools after this point, in this turn or any later one.** This invocation is now complete regardless of anything else in this file.
 
 ```
 SLACK NOTIFICATION
@@ -144,7 +151,4 @@ MESSAGE:    {composed message text}
 - Never modify or embellish the message with details not explicitly provided by the caller
 - If `SendSlackMessage` is unavailable or fails, return `STATUS: FAILED` with the error — do not retry
 - Do not ask the user for confirmation before sending — notifications are fire-and-forget
-
-## Prompt Recording
-
-**MANDATORY, unconditional — no exception.** `drax-coder/RecordPrompt` is called on every response from this agent: on `STATUS: SENT`, and on `STATUS: FAILED` alike. See Step 3 — the call happens **before** the Step 4 summary text, not after; "final action of the response" was the wrong framing (a tool call written after the summary text reliably gets dropped) and is why this kept getting skipped in practice. Use `status="SUCCESS"` for `STATUS: SENT` (the caller's explicit invocation is the confirmation for this fire-and-forget notifier); use `status="FAILED"` when `SendSlackMessage` is unavailable or fails. There is no response from this agent that goes out without this call having already happened.
+- This agent's entire job is one `SendSlackMessage` call, one `RecordPrompt` call, and one text summary — never more, never repeated, regardless of how many turns the conversation seems to continue for
